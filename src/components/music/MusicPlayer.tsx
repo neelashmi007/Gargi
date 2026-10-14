@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useApp } from "@/context/AppContext";
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ListMusic, Sparkles, ChevronUp, ChevronDown } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ListMusic, Sparkles, ChevronUp, ChevronDown, Shuffle } from "lucide-react";
 
 export const MusicPlayer: React.FC = () => {
   const {
@@ -17,6 +17,8 @@ export const MusicPlayer: React.FC = () => {
     playTrack,
     nextTrack,
     prevTrack,
+    isShuffle,
+    toggleShuffle,
     setVolume,
     toggleMute,
     seek,
@@ -44,13 +46,28 @@ export const MusicPlayer: React.FC = () => {
               <span className="text-xs font-semibold tracking-wider uppercase text-deep-rose flex items-center gap-1.5">
                 <ListMusic className="w-4 h-4" /> Romantic Playlist for Gargi
               </span>
-              <button
-                type="button"
-                onClick={() => setShowPlaylist(false)}
-                className="text-xs text-berry hover:text-deep-rose font-medium underline"
-              >
-                Close
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={toggleShuffle}
+                  className={`text-[11px] px-2.5 py-0.5 rounded-full font-serif flex items-center gap-1 transition-all ${
+                    isShuffle
+                      ? "bg-deep-rose text-white shadow-xs font-semibold"
+                      : "bg-cotton-candy/60 text-berry hover:text-deep-rose"
+                  }`}
+                  title={isShuffle ? "Shuffle is ON (Randomized)" : "Shuffle is OFF (Sequential)"}
+                >
+                  <Shuffle className="w-3 h-3" />
+                  <span>{isShuffle ? "Shuffle On" : "Sequential"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPlaylist(false)}
+                  className="text-xs text-berry hover:text-deep-rose font-medium underline"
+                >
+                  Close
+                </button>
+              </div>
             </div>
             <div className="space-y-1">
               {playlist.map((track, idx) => {
@@ -114,6 +131,23 @@ export const MusicPlayer: React.FC = () => {
 
             {/* Controls */}
             <div className="flex items-center gap-1 sm:gap-2">
+              <button
+                type="button"
+                onClick={toggleShuffle}
+                aria-label={isShuffle ? "Shuffle on" : "Shuffle off"}
+                title={isShuffle ? "Randomized Playback (Active)" : "Sequential Playback"}
+                className={`p-1.5 rounded-full transition-all relative ${
+                  isShuffle
+                    ? "text-deep-rose bg-rose-pink/30 font-bold"
+                    : "text-berry/60 hover:text-deep-rose hover:bg-cotton-candy/40"
+                }`}
+              >
+                <Shuffle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                {isShuffle && (
+                  <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-deep-rose rounded-full" />
+                )}
+              </button>
+
               <button
                 type="button"
                 onClick={prevTrack}

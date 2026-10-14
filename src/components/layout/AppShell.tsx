@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { AppProvider, useApp } from "@/context/AppContext";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { MusicPlayer } from "@/components/music/MusicPlayer";
 import { FloatingPetals } from "@/components/decorations/FloatingPetals";
 import { CuteMascot } from "@/components/decorations/CuteMascot";
 import { DiscoveriesModal } from "@/components/modals/DiscoveriesModal";
@@ -36,7 +35,6 @@ const InnerShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       </main>
       <Footer />
       <CuteMascot />
-      <MusicPlayer />
 
       {/* Modals & Toasts */}
       <DiscoveriesModal isOpen={isJournalOpen} onClose={() => setIsJournalOpen(false)} />

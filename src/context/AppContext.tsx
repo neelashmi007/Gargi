@@ -79,17 +79,15 @@ const STORAGE_KEYS = {
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Audio state
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [isShuffle, setIsShuffle] = useState(true);
   const [volume, setVolumeState] = useState(0.7);
   const [isMuted, setIsMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(235);
-  const [isAudioSynthesizing, setIsAudioSynthesizing] = useState(false);
+  const isAudioSynthesizing = false;
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const synthTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const synthCtxRef = useRef<AudioContext | null>(null);
   const playedHistoryRef = useRef<number[]>([]);
   const shuffleQueueRef = useRef<number[]>([]);
 
@@ -153,61 +151,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {
       console.warn("Storage not accessible:", e);
     }
-  }, []);
-
-  // Web Audio ambient music box synthesizer fallback
-  const playSynthesizedMelody = useCallback(() => {
-    try {
-      if (!synthCtxRef.current) {
-        const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        synthCtxRef.current = new AudioContextClass();
-      }
-      const ctx = synthCtxRef.current;
-      if (ctx.state === "suspended") {
-        ctx.resume();
-      }
-
-      setIsAudioSynthesizing(true);
-      // Gentle romantic music box notes (Pentatonic blush scale: C5, D5, E5, G5, A5, C6)
-      const notes = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5];
-      let step = 0;
-
-      if (synthTimerRef.current) clearInterval(synthTimerRef.current);
-
-      synthTimerRef.current = setInterval(() => {
-        if (!isPlaying || isMuted) return;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        // Music box bell timbre
-        osc.type = "sine";
-        const noteIndex = (step * 3) % notes.length;
-        osc.frequency.setValueAtTime(notes[noteIndex], ctx.currentTime);
-
-        const currentVol = isMuted ? 0 : volume * 0.15;
-        gain.gain.setValueAtTime(currentVol, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.4);
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.start();
-        osc.stop(ctx.currentTime + 1.4);
-
-        step++;
-        setCurrentTime((prev) => (prev >= duration ? 0 : prev + 1));
-      }, 750);
-    } catch {
-      // AudioContext unavailable
-    }
-  }, [isPlaying, isMuted, volume, duration]);
-
-  const stopSynthesizedMelody = useCallback(() => {
-    if (synthTimerRef.current) {
-      clearInterval(synthTimerRef.current);
-      synthTimerRef.current = null;
-    }
-    setIsAudioSynthesizing(false);
   }, []);
 
   // Audio controller
@@ -297,10 +240,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     const handleError = () => {
-      // Audio file missing / 404: activate synthesizer fallback gracefully
-      if (isPlaying) {
-        playSynthesizedMelody();
-      }
+      // Audio error handler: skip to next track
+      nextTrackRef.current();
     };
 
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
@@ -310,12 +251,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (isPlaying) {
       audio.play().catch(() => {
-        // Autoplay policy or 404 -> fallback to synthesized sound
-        playSynthesizedMelody();
+        // Autoplay policy waiting for user interaction
       });
     } else {
       audio.pause();
-      stopSynthesizedMelody();
     }
 
     return () => {
@@ -324,14 +263,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("error", handleError);
     };
-  }, [currentTrackIndex, isPlaying, playSynthesizedMelody, stopSynthesizedMelody, isMuted, volume]);
+  }, [currentTrackIndex, isPlaying, isMuted, volume]);
+
+  // Ensure audio autostarts immediately on load or upon the very first user interaction
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let unlocked = false;
+    const unlockAudio = () => {
+      if (unlocked) return;
+      if (audioRef.current && isPlaying) {
+        audioRef.current.play().then(() => {
+          unlocked = true;
+          window.removeEventListener("pointerdown", unlockAudio);
+          window.removeEventListener("touchstart", unlockAudio);
+          window.removeEventListener("click", unlockAudio);
+          window.removeEventListener("keydown", unlockAudio);
+        }).catch(() => {
+          // Keep listeners active
+        });
+      }
+    };
+
+    unlockAudio();
+
+    window.addEventListener("pointerdown", unlockAudio, { passive: true });
+    window.addEventListener("touchstart", unlockAudio, { passive: true });
+    window.addEventListener("click", unlockAudio, { passive: true });
+    window.addEventListener("keydown", unlockAudio, { passive: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", unlockAudio);
+      window.removeEventListener("touchstart", unlockAudio);
+      window.removeEventListener("click", unlockAudio);
+      window.removeEventListener("keydown", unlockAudio);
+    };
+  }, [isPlaying]);
 
   const togglePlay = () => {
     setIsPlaying((prev) => {
       const next = !prev;
-      if (!next) {
-        if (audioRef.current) audioRef.current.pause();
-        stopSynthesizedMelody();
+      if (!next && audioRef.current) {
+        audioRef.current.pause();
       }
       return next;
     });

@@ -4,9 +4,10 @@ Add your own romantic MP3 or audio files to this directory.
 
 ## Default Track Mapping
 By default, the music player is configured to look for these files:
-- `track-1.mp3` - Fairytale Rose Waltz
-- `track-2.mp3` - Pink Clouds & Starlight
-- `track-3.mp3` - Gentle Rain on Rose Petals
+- `track-1.mp3` - Music 1
+- `track-2.mp3` - Music 2
+- `track-3.mp3` - Music 3
+- `track-4.mp3` - Music 4
 
 ## How to Add Your Music:
 1. Place your `.mp3`, `.m4a`, or `.wav` files directly into this `public/music/` folder.

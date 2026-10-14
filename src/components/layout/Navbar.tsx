@@ -21,6 +21,9 @@ import {
   Gamepad2,
   Cloud,
   Feather,
+  SkipForward,
+  Shuffle,
+  Music,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -31,8 +34,14 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({ onOpenJournal, onOpenReset }) => {
   const pathname = usePathname();
   const {
+    currentTrack,
     isPlaying,
     togglePlay,
+    nextTrack,
+    volume,
+    setVolume,
+    isShuffle,
+    toggleShuffle,
     discoveries,
     reducedMotion,
     toggleReducedMotion,
@@ -118,19 +127,33 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJournal, onOpenReset }) =>
             </span>
           </button>
 
-          {/* Quick Sound Toggle */}
+          {/* Top Sound Option */}
           <button
             type="button"
             onClick={togglePlay}
             aria-label={isPlaying ? "Pause music" : "Play music"}
-            title={isPlaying ? "Pause music" : "Play romantic melody"}
-            className={`p-2 rounded-full border transition-all ${
+            title={isPlaying ? `Now Playing: "${currentTrack.title}" (Click to pause)` : "Play romantic music"}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all ${
               isPlaying
                 ? "bg-deep-rose text-white border-deep-rose shadow-romantic animate-pulse-soft"
-                : "bg-warm-ivory border-rose-pink/50 text-berry hover:text-deep-rose"
+                : "bg-warm-ivory border-rose-pink/50 text-berry hover:text-deep-rose hover:bg-cotton-candy/40"
             }`}
           >
-            {isPlaying ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            {isPlaying ? (
+              <>
+                <Volume2 className="w-4 h-4 flex-shrink-0 animate-bounce-gentle" />
+                <span className="text-[11px] font-serif font-medium hidden sm:inline max-w-[120px] truncate">
+                  {currentTrack.title}
+                </span>
+              </>
+            ) : (
+              <>
+                <VolumeX className="w-4 h-4 flex-shrink-0 opacity-70" />
+                <span className="text-[11px] font-serif font-medium hidden sm:inline">
+                  Sound Off
+                </span>
+              </>
+            )}
           </button>
 
           {/* Settings Menu Toggle */}
@@ -145,7 +168,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJournal, onOpenReset }) =>
             </button>
 
             {settingsOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-warm-ivory rounded-2xl p-4 shadow-romantic-lg border-2 border-rose-pink/60 animate-bloom-in text-xs text-berry z-50">
+              <div className="absolute right-0 mt-2 w-72 bg-warm-ivory rounded-2xl p-4 shadow-romantic-lg border-2 border-rose-pink/60 animate-bloom-in text-xs text-berry z-50">
                 <div className="flex items-center justify-between pb-2 mb-2 border-b border-rose-pink/30">
                   <span className="font-serif font-bold text-deep-rose text-sm">Settings & Experience</span>
                   <button
@@ -158,6 +181,66 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJournal, onOpenReset }) =>
                 </div>
 
                 <div className="space-y-3">
+                  {/* Romantic Music Controls */}
+                  <div className="p-2.5 rounded-xl bg-cotton-candy/30 border border-rose-pink/40 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-semibold text-deep-rose flex items-center gap-1">
+                        <Music className="w-3.5 h-3.5" /> Background Music
+                      </span>
+                      <button
+                        type="button"
+                        onClick={toggleShuffle}
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-serif flex items-center gap-1 transition-all ${
+                          isShuffle
+                            ? "bg-deep-rose text-white font-semibold shadow-xs"
+                            : "bg-warm-ivory text-berry hover:text-deep-rose border border-rose-pink/30"
+                        }`}
+                        title={isShuffle ? "Shuffle is ON (Randomized)" : "Shuffle is OFF"}
+                      >
+                        <Shuffle className="w-2.5 h-2.5" />
+                        <span>{isShuffle ? "Random" : "Sequential"}</span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-serif font-semibold text-deep-rose truncate">{currentTrack.title}</p>
+                        <p className="text-[10px] opacity-70 truncate">{currentTrack.artist}</p>
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={togglePlay}
+                          className="w-7 h-7 rounded-full bg-deep-rose text-white flex items-center justify-center hover:bg-berry active:scale-95 transition-all shadow-xs"
+                          title={isPlaying ? "Pause" : "Play"}
+                        >
+                          {isPlaying ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={nextTrack}
+                          className="w-7 h-7 rounded-full bg-warm-ivory border border-rose-pink/40 text-deep-rose flex items-center justify-center hover:bg-cotton-candy/50 active:scale-95 transition-all"
+                          title="Skip to next randomized track"
+                        >
+                          <SkipForward className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1 border-t border-rose-pink/20">
+                      <Volume2 className="w-3 h-3 text-deep-rose opacity-70 flex-shrink-0" />
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={volume}
+                        onChange={(e) => setVolume(parseFloat(e.target.value))}
+                        aria-label="Adjust volume"
+                        className="w-full h-1 bg-warm-ivory rounded-lg appearance-none cursor-pointer accent-deep-rose"
+                      />
+                    </div>
+                  </div>
                   {/* Sky Theme Mode */}
                   <div>
                     <span className="text-[11px] font-semibold text-berry/70 block mb-1">Atmosphere</span>
